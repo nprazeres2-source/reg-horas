@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registo de Horas de Trabalho</title>
+<meta name="theme-color" content="#0f6e6e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Horas">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style id="css">
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1b1f24;--mut:#6b7280;--line:#e3e6ea;--acc:#0f6e6e;--acc2:#e6f2f2;--ok:#1a7f37;--okb:#e7f5ea;--warn:#b45309;--warnb:#fdf3e2;--bad:#b42318;--badb:#fdeceb}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--card:#1b1e23;--ink:#e8eaed;--mut:#9aa1ab;--line:#2c3037;--acc:#4fb3b3;--acc2:#1d2b2c;--ok:#5cc27a;--okb:#16261b;--warn:#e9a54b;--warnb:#2b2214;--bad:#f07a6f;--badb:#2e1816}}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;-webkit-text-size-adjust:100%}
+header{background:var(--acc);color:#fff;padding:14px 16px 0;position:sticky;top:0;z-index:5}
+@media (prefers-color-scheme:dark){header{color:#0d1a1a}}
+header h1{margin:0 0 10px;font-size:18px;font-weight:650}
+nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav button{flex:0 0 auto;background:none;border:0;color:inherit;opacity:.75;padding:9px 12px;font-size:14px;border-bottom:3px solid transparent;cursor:pointer}
+nav button.on{opacity:1;border-bottom-color:currentColor;font-weight:600}
+main{max-width:860px;margin:0 auto;padding:14px 12px 90px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.card h2{font-size:15px;margin:0 0 10px;font-weight:650}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:640px){.grid.g4{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .l{font-size:12px;color:var(--mut)}.kpi .v{font-size:20px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}.kpi .s{font-size:12px;color:var(--mut);margin-top:2px}
+.kpi.bad .v{color:var(--bad)}.kpi.ok .v{color:var(--ok)}
+label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:56px}
+.row{display:grid;gap:10px;margin-bottom:10px}.r2{grid-template-columns:1fr 1fr}.r3{grid-template-columns:1fr 1fr 1fr}
+.btn{border:0;border-radius:8px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer;background:var(--acc);color:#fff}
+@media (prefers-color-scheme:dark){.btn{color:#0d1a1a}}
+.btn.sec{background:var(--acc2);color:var(--acc)}.btn.del{background:var(--badb);color:var(--bad)}.btn.sm{padding:6px 10px;font-size:13px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.fab{position:fixed;right:18px;bottom:18px;width:56px;height:56px;border-radius:50%;font-size:28px;line-height:1;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:6}
+.list .it{display:flex;justify-content:space-between;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.list .it:last-child{border-bottom:0}
+.it .t{font-weight:600}.it .d{font-size:12.5px;color:var(--mut);margin-top:2px}.it .a{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:20px}
+.tag.ok{background:var(--okb);color:var(--ok)}.tag.warn{background:var(--warnb);color:var(--warn)}.tag.bad{background:var(--badb);color:var(--bad)}.tag.mut{background:var(--bg);color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13.5px}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}th{font-size:12px;color:var(--mut);font-weight:600}
+.scroll{overflow-x:auto}
+.bar{height:8px;background:var(--bg);border-radius:6px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--acc)}
+.muted{color:var(--mut);font-size:13px}.empty{color:var(--mut);text-align:center;padding:18px 0}
+.filters{display:flex;gap:8px;margin-bottom:10px}.filters>*{flex:1}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.modal.on{display:flex}
+.sheet{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px}
+@media(min-width:640px){.modal{align-items:center}.sheet{border-radius:16px}}
+.sheet h3{margin:0 0 12px;font-size:17px}
+.calc{background:var(--acc2);color:var(--acc);border-radius:8px;padding:10px;font-weight:600;margin-bottom:10px;font-variant-numeric:tabular-nums}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:30}
+.toast.on{opacity:1}
+.pbtn{margin-top:5px;border:1px solid var(--line);background:var(--card);color:var(--acc);border-radius:20px;padding:3px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.opt{display:block;width:100%;text-align:left;margin-bottom:8px}
+.adr{display:grid;grid-template-columns:1fr 88px 36px;gap:6px;margin-bottom:6px}.ad-x{border:0;border-radius:8px;background:var(--badb);color:var(--bad);font-size:18px;cursor:pointer}
+.lock{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:#0f6e6e;color:#fff;text-align:center}
+.lock h2{margin:6px 0 4px;font-size:20px}.lock p{margin:0;opacity:.9;min-height:20px}.lk-ic{font-size:38px}
+.dots{display:flex;gap:12px;margin:16px 0 24px;min-height:16px}.dots i{width:14px;height:14px;border-radius:50%;border:2px solid #fff}.dots i.f{background:#fff}
+.pad{display:grid;grid-template-columns:repeat(3,72px);gap:14px}.pad button{width:72px;height:72px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;font-size:26px;cursor:pointer}.pad button:active{background:rgba(255,255,255,.35)}
+.lnk{background:none;border:0;color:#fff;opacity:.85;margin-top:22px;text-decoration:underline;font:inherit;cursor:pointer}
+.shake{animation:sh .35s}@keyframes sh{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.hlock{float:right;background:rgba(255,255,255,.2);border:0;border-radius:8px;color:inherit;margin-left:8px;padding:2px 8px;font-size:14px;cursor:pointer}
+.chk{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--ink);margin:10px 0 0}.chk input{width:auto}
+.warnc{background:var(--warnb);border-color:transparent;color:var(--warn)}.warnc .btn{background:var(--warn);color:#fff}
+.sync{font-size:11.5px;opacity:.85;float:right;margin-top:3px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script id="data" type="application/json">{"v":1,"updatedAt":0,"ents":[],"regs":[],"pags":[],"cfg":{"diasSemana":[1,2,3,4,5]}}</script>
+<script id="code">
+(function(){
+const SRC_CSS=document.getElementById('css').textContent;
+const SRC_CODE=document.getElementById('code').textContent;
+const TITLE=document.title;
+const EMPTY=()=>({v:1,updatedAt:0,ents:[],regs:[],pags:[],cfg:{diasSemana:[1,2,3,4,5]}});
+let S=null,KEY=null,SALT=null,PINLEN=0;
+const LK='registo-horas-trabalho-v1';
+function norm(d){d=d&&typeof d==='object'?d:EMPTY();d.ents=d.ents||[];d.regs=d.regs||[];d.pags=d.pags||[];d.cfg=d.cfg||{};if(!d.cfg.diasSemana)d.cfg.diasSemana=[1,2,3,4,5];
+  d.regs.forEach(r=>{if(!r.adics)r.adics=[];if(+r.extra){r.adics.push({id:'ad'+Math.random().toString(36).slice(2,9),desc:'Extra',valor:+r.extra})}r.extra=0});return d}
+let RAW=null;try{RAW=JSON.parse(localStorage.getItem(LK)||'null')}catch(e){}
+const START_LOCKED=!!(RAW&&RAW.enc);
+if(!START_LOCKED){let E0=null;try{E0=JSON.parse(document.getElementById('data').textContent)}catch(e){}S=norm(RAW&&(!E0||(RAW.updatedAt||0)>=(E0.updatedAt||0))?RAW:E0)}
+
+// Encriptação (PBKDF2 + AES-GCM)
+const b64=u=>{const a=new Uint8Array(u);let s='';for(let i=0;i<a.length;i+=8192)s+=String.fromCharCode.apply(null,a.subarray(i,i+8192));return btoa(s)};
+const ub64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const newSalt=()=>b64(crypto.getRandomValues(new Uint8Array(16)));
+async function deriveKey(pin,salt){const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt:ub64(salt),iterations:250000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function encObj(obj,key,salt,len){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(obj)));return {enc:1,app:'registo-horas',len,salt,iv:b64(iv),ct:b64(ct)}}
+async function decObj(w,key){const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:ub64(w.iv)},key,ub64(w.ct));return JSON.parse(new TextDecoder().decode(pt))}
+
+let ART=null,pubTimer=null,syncState='local';
+(async()=>{try{if(window.claude&&claude.use){ART=await claude.use('artifact');setSync(ART?'guardado':'local')}}catch(e){}})();
+let DL=null;(async()=>{try{if(window.claude&&claude.use)DL=await claude.use('downloads')}catch(e){}})();
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const eur=n=>(Math.round((n||0)*100)/100).toLocaleString('pt-PT',{style:'currency',currency:'EUR'});
+const hh=n=>{n=n||0;const h=Math.floor(n+1e-9),m=Math.round((n-h)*60);return h+'h'+(m?String(m).padStart(2,'0'):'')};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>iso(new Date());
+const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const mLabel=k=>{const [y,m]=k.split('-');return MESES[+m-1]+' '+y};
+const mShort=k=>{const [y,m]=k.split('-');return MESES[+m-1].slice(0,3)+' '+y.slice(2)};
+const fdate=s=>{if(!s)return'';const [y,m,d]=s.split('-');return d+'/'+m+'/'+y};
+const DOW=['dom','seg','ter','qua','qui','sex','sáb'];
+const dow=s=>DOW[new Date(s+'T12:00').getDay()];
+const ent=id=>S.ents.find(e=>e.id===id)||{nome:'(sem entidade)',valor:0,prazoTipo:'dia',prazo:8};
+const toMin=t=>{if(!t)return null;const [h,m]=t.split(':');return +h*60+ +m};
+
+function regHoras(r){
+  if(r.modo==='horas')return +r.horas||0;
+  const a=toMin(r.ini),b=toMin(r.fim);if(a==null||b==null)return 0;
+  let d=b-a;if(d<=0)d+=1440;d-=(+r.pausa||0);return Math.max(0,d/60);
+}
+const adicsOf=r=>(r.adics||[]);
+const regBase=r=>Math.round(regHoras(r)*(+r.valor||0)*100)/100;
+const adicTot=r=>adicsOf(r).reduce((s,a)=>s+(+a.valor||0),0)+(+r.extra||0);
+const regValor=r=>Math.round((regBase(r)+adicTot(r))*100)/100;
+
+function prazoDe(entId,mk){
+  const e=ent(entId);const [y,m]=mk.split('-').map(Number);
+  if(e.prazoTipo==='dias'){const d=new Date(y,m,0);d.setDate(d.getDate()+(+e.prazo||0));return iso(d)}
+  const last=new Date(y,m+1,0).getDate();const dia=Math.min(+e.prazo||1,last);return iso(new Date(y,m,dia));
+}
+
+function regPagoLig(r){return S.pags.filter(p=>p.reg===r.id).reduce((a,p)=>a+(+p.valor||0),0)}
+let CALC=null;
+const pagosDe=f=>S.pags.filter(f).reduce((a,p)=>a+(+p.valor||0),0);
+const pagoHoras=r=>pagosDe(p=>p.reg===r.id&&!p.adic);
+const pagoAdic=(r,a)=>pagosDe(p=>p.reg===r.id&&p.adic===a.id);
+function parteEst(v,pg,mp){if(mp||pg>=v-0.004)return {e:'pago',pago:v,falta:0};return {e:pg>0?'parcial':'pendente',pago:pg,falta:Math.round((v-pg)*100)/100}}
+function mesPago(r){const row=CALC&&CALC.rows.find(x=>x.ent===r.ent&&x.mes===r.data.slice(0,7));return !!(row&&row.estado==='pago')}
+function regEstado(r){return parteEst(regValor(r),regPagoLig(r),mesPago(r))}
+// Cálculo por mês e entidade com alocação dos pagamentos
+function calc(){
+  const map={};
+  const key=(e,m)=>e+'|'+m;
+  S.regs.forEach(r=>{const mk=r.data.slice(0,7),k=key(r.ent,mk);
+    if(!map[k])map[k]={ent:r.ent,mes:mk,horas:0,valor:0,dias:new Set(),pago:0};
+    map[k].horas+=regHoras(r);map[k].valor+=regValor(r);map[k].dias.add(r.data)});
+  const rows=Object.values(map);rows.forEach(r=>{r.valor=Math.round(r.valor*100)/100;r.prazo=prazoDe(r.ent,r.mes)});
+  let credito={};
+  const byEnt=e=>rows.filter(r=>r.ent===e).sort((a,b)=>a.mes.localeCompare(b.mes));
+  const pags=[...S.pags].sort((a,b)=>a.data.localeCompare(b.data));
+  pags.forEach(p=>{let rest=+p.valor||0;
+    if(p.mes){const r=rows.find(x=>x.ent===p.ent&&x.mes===p.mes);if(r){const t=Math.min(rest,Math.max(0,r.valor-r.pago));r.pago+=t;rest-=t;if(t>0)(r.ultPag=p.data)}}
+    if(rest>0.004){for(const r of byEnt(p.ent)){const t=Math.min(rest,Math.max(0,r.valor-r.pago));if(t>0){r.pago+=t;rest-=t;r.ultPag=p.data}if(rest<=0.004)break}}
+    if(rest>0.004)credito[p.ent]=(credito[p.ent]||0)+rest});
+  const hoje=today();
+  rows.forEach(r=>{r.pago=Math.round(r.pago*100)/100;r.falta=Math.max(0,Math.round((r.valor-r.pago)*100)/100);
+    r.estado=r.falta<=0.004?'pago':(r.prazo<hoje?'atraso':(r.pago>0?'parcial':'pendente'));
+    r.diasN=r.dias.size});
+  return {rows,credito};
+}
+
+function diasUteis(mk,ateDia){
+  const [y,m]=mk.split('-').map(Number);const last=new Date(y,m,0).getDate();let n=0;
+  for(let d=1;d<=(ateDia==null?last:ateDia);d++){if(S.cfg.diasSemana.includes(new Date(y,m-1,d).getDay()))n++}return n;
+}
+function estimativa(){
+  const now=new Date(),mk=iso(now).slice(0,7);
+  const regsM=S.regs.filter(r=>r.data.startsWith(mk));
+  const ganho=regsM.reduce((a,r)=>a+regValor(r),0),horas=regsM.reduce((a,r)=>a+regHoras(r),0);
+  const tot=diasUteis(mk),dec=diasUteis(mk,now.getDate());
+  const proj=dec>0?ganho/dec*tot:ganho,projH=dec>0?horas/dec*tot:horas;
+  // média dos últimos 3 meses completos
+  const meses=[];for(let i=1;i<=3;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);meses.push(iso(d).slice(0,7))}
+  const tots=meses.map(k=>S.regs.filter(r=>r.data.startsWith(k)).reduce((a,r)=>a+regValor(r),0)).filter(v=>v>0);
+  const media=tots.length?tots.reduce((a,b)=>a+b,0)/tots.length:0;
+  return {mk,ganho,horas,proj:Math.max(proj,ganho),projH:Math.max(projH,horas),tot,dec,media,nMed:tots.length};
+}
+
+// Persistência
+let saveChain=Promise.resolve();
+function persist(){const snap=JSON.parse(JSON.stringify(S)),k=KEY,sa=SALT,ln=PINLEN;
+  saveChain=saveChain.then(async()=>{try{if(k)localStorage.setItem(LK,JSON.stringify(await encObj(snap,k,sa,ln)));else localStorage.setItem(LK,JSON.stringify(snap))}catch(e){toast('Erro ao guardar')}});return saveChain}
+function save(msg){
+  S.updatedAt=Date.now();
+  persist();
+  if(msg)toast(msg);
+  render();
+  if(ART){setSync('a guardar…');clearTimeout(pubTimer);pubTimer=setTimeout(publish,1500)}
+}
+function buildDoc(){
+  const data=JSON.stringify(S).replace(/</g,'\\u003c');
+  return '<!DOCTYPE html>\n<html lang="pt">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>'+esc(TITLE)+'</title>\n<style id="css">'+SRC_CSS+'</style>\n</head>\n<body>\n<div id="app"></div>\n<script id="data" type="application/json">'+data+'<\/script>\n<script id="code">'+SRC_CODE+'<\/script>\n</body>\n</html>\n';
+}
+async function publish(){
+  if(!ART)return;
+  try{await ART.publish(buildDoc());setSync('guardado')}
+  catch(e){const c=(e&&(e.code||e.name||e.message))||'';
+    if(/conflict/i.test(c)){setSync('atualizado noutro dispositivo')}
+    else if(/not_granted|not_writer/i.test(c)){setSync('só leitura (guardado neste dispositivo)')}
+    else{setSync('erro ao guardar — dados guardados neste dispositivo')}}
+}
+function setSync(t){syncState=t;const el=$('#sync');if(el)el.textContent=t==='local'?'guardado neste dispositivo':t}
+
+let toastT;function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),1800)}
+
+// UI
+let TAB='resumo',FM=iso(new Date()).slice(0,7),FE='';
+function shell(){
+  document.getElementById('app').innerHTML=`
+  <header><h1>Registo de Horas ${KEY?'<button class="hlock" id="lockb" aria-label="Bloquear">🔒</button>':''}<span class="sync" id="sync"></span></h1>
+  <nav>${[['resumo','Resumo'],['registos','Dias & horas'],['pagamentos','Pagamentos'],['meses','Por mês'],['config','Definições']].map(([k,l])=>`<button data-tab="${k}">${l}</button>`).join('')}</nav></header>
+  <main id="main"></main>
+  <button class="btn fab" id="fab" aria-label="Adicionar">+</button>
+  <div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+  <div class="toast" id="toast"></div>`;
+  document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;render();window.scrollTo(0,0)});
+  if($('#lockb'))$('#lockb').onclick=lockNow;
+  $('#fab').onclick=()=>{if(!S.ents.length){TAB='config';render();openEnt();return}
+    if(TAB==='pagamentos')openPag();else openReg()};
+  $('#modal').onclick=e=>{if(e.target.id==='modal')closeM()};
+  setSync(syncState);
+}
+function render(){
+  CALC=calc();
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===TAB));
+  $('#fab').style.display=TAB==='config'||TAB==='meses'?'none':'';
+  const m=$('#main');
+  if(!S.ents.length&&TAB!=='config'){m.innerHTML=`<div class="card"><h2>Bem-vindo</h2><p class="muted">Comece por criar a entidade para quem trabalha (empregador ou cliente), com o valor à hora e o prazo de pagamento.</p><button class="btn" id="go">Criar entidade</button></div>`;$('#go').onclick=()=>{TAB='config';render();openEnt()};return}
+  ({resumo:vResumo,registos:vRegistos,pagamentos:vPags,meses:vMeses,config:vConfig})[TAB](m);
+}
+const estTag=s=>({pago:'<span class="tag ok">Pago</span>',parcial:'<span class="tag warn">Parcial</span>',pendente:'<span class="tag mut">Pendente</span>',atraso:'<span class="tag bad">Em atraso</span>'})[s];
+const diasAte=d=>Math.round((new Date(d+'T12:00')-new Date(today()+'T12:00'))/864e5);
+
+function vResumo(m){
+  const {rows,credito}=calc(),E=estimativa();
+  const falta=rows.reduce((a,r)=>a+r.falta,0),atraso=rows.filter(r=>r.estado==='atraso').reduce((a,r)=>a+r.falta,0);
+  const totCred=Object.values(credito).reduce((a,b)=>a+b,0);
+  const abertos=rows.filter(r=>r.falta>0).sort((a,b)=>a.prazo.localeCompare(b.prazo));
+  const ano=new Date().getFullYear()+'';
+  const rAno=rows.filter(r=>r.mes.startsWith(ano)),ganhoAno=rAno.reduce((a,r)=>a+r.valor,0),pagoAno=S.pags.filter(p=>p.data.startsWith(ano)).reduce((a,p)=>a+(+p.valor||0),0);
+  const pct=E.proj>0?Math.min(100,E.ganho/E.proj*100):0;
+  const dB=S.cfg.ultBackup?diasAte(S.cfg.ultBackup)*-1:null;
+  m.innerHTML=`${S.regs.length&&(dB==null||dB>=7)?`<div class="card warnc"><b>⚠ ${dB==null?'Ainda não fez nenhuma cópia de segurança':'Última cópia de segurança há '+dB+' dias'}</b><p style="margin:6px 0 10px;font-size:13px">Os dados estão só neste telemóvel. Guarde uma cópia (ex.: no Google Drive ou email).</p><button class="btn sm" id="bkn">Fazer cópia agora</button></div>`:''}
+  <div class="grid g4" style="margin-bottom:12px">
+    <div class="kpi ${falta>0?'':'ok'}"><div class="l">Falta receber</div><div class="v">${eur(falta)}</div><div class="s">${abertos.length} ${abertos.length===1?'mês':'meses'} em aberto</div></div>
+    <div class="kpi ${atraso>0?'bad':''}"><div class="l">Em atraso</div><div class="v">${eur(atraso)}</div><div class="s">${atraso>0?'prazo ultrapassado':'nada em atraso'}</div></div>
+    <div class="kpi"><div class="l">Este mês (${MESES[new Date().getMonth()]})</div><div class="v">${eur(E.ganho)}</div><div class="s">${hh(E.horas)} trabalhadas</div></div>
+    <div class="kpi"><div class="l">Estimativa do mês</div><div class="v">${eur(E.proj)}</div><div class="s">~${hh(E.projH)} · ${E.dec}/${E.tot} dias úteis</div></div>
+  </div>
+  <div class="card"><h2>Progresso de ${mLabel(E.mk)}</h2>
+    <div class="muted">${eur(E.ganho)} de ${eur(E.proj)} estimados ao ritmo atual${E.nMed?` · ${E.nMed===1?'média do último mês':'média dos últimos '+E.nMed+' meses'}:<b>${eur(E.media)}</b>`:''}</div>
+    <div class="bar"><i style="width:${pct}%"></i></div></div>
+  <div class="card"><h2>Próximos prazos de pagamento</h2>
+    ${abertos.length?`<div class="list">${abertos.map(r=>{const d=diasAte(r.prazo);return `<div class="it" data-mes="${r.mes}"><div><div class="t">${mLabel(r.mes)}</div><div class="d">${esc(ent(r.ent).nome)} · prazo ${fdate(r.prazo)} · ${d<0?`<b style="color:var(--bad)">${-d} dias de atraso</b>`:d===0?'<b>hoje</b>':`faltam ${d} dias`}</div></div><div class="a"><b>${eur(r.falta)}</b><div class="d">${estTag(r.estado)}</div><button class="pbtn" data-qm="${r.ent}|${r.mes}">Indicar pagamento</button></div></div>`}).join('')}</div>`:'<div class="empty">Tudo pago 👍</div>'}
+    ${totCred>0.004?`<p class="muted">Crédito a seu favor (pago a mais): <b>${eur(totCred)}</b></p>`:''}
+  </div>
+  <div class="card"><h2>Ano ${ano}</h2>
+    <div class="grid"><div><div class="muted">Ganho</div><b>${eur(ganhoAno)}</b></div><div><div class="muted">Recebido</div><b>${eur(pagoAno)}</b></div>
+    <div><div class="muted">Horas</div><b>${hh(rAno.reduce((a,r)=>a+r.horas,0))}</b></div><div><div class="muted">Dias trabalhados</div><b>${rAno.reduce((a,r)=>a+r.diasN,0)}</b></div></div></div>
+  <div class="card"><h2>Últimos registos</h2>${regList([...S.regs].sort(sortReg).slice(0,5))}</div>`;
+  m.querySelectorAll('[data-mes]').forEach(el=>el.onclick=()=>{FM=el.dataset.mes;TAB='registos';render()});
+  bindQM(m);
+  bindRegs(m);
+  if($('#bkn'))$('#bkn').onclick=()=>doExport(!!KEY);
+}
+const sortReg=(a,b)=>(b.data+(b.ini||'')).localeCompare(a.data+(a.ini||''));
+function bindQM(m){m.querySelectorAll('[data-qm]').forEach(b=>b.onclick=e=>{e.stopPropagation();const [en,mes]=b.dataset.qm.split('|');quickPay({ent:en,mes})})}
+function regList(list){
+  if(!list.length)return '<div class="empty">Sem registos</div>';
+  return `<div class="list">${list.map(r=>`<div class="it" data-reg="${r.id}"><div><div class="t">${dow(r.data)}, ${fdate(r.data)}</div><div class="d">${r.modo==='horas'?'':`${r.ini}–${r.fim}${+r.pausa?` · pausa ${r.pausa} min`:''} · `}${hh(regHoras(r))}${S.ents.length>1?' · '+esc(ent(r.ent).nome):''}${r.nota?' · '+esc(r.nota):''}</div>${adicsOf(r).map(a=>{const st=parteEst(+a.valor||0,pagoAdic(r,a),mesPago(r));return `<div class="d">➕ ${esc(a.desc||'Adicional')} · ${eur(a.valor)} ${+a.valor?estTag(st.e):''}</div>`}).join('')}<button class="pbtn" data-ed="${r.id}">✏️ Editar</button></div><div class="a"><b>${eur(regValor(r))}</b><div class="d">${eur(r.valor)}/h${adicsOf(r).length?' + '+eur(adicTot(r)):''}</div>${(()=>{const st=regEstado(r);return st.e==='pago'?'<div class="d">'+estTag('pago')+'</div>':`<button class="pbtn" data-qp="${r.id}">${st.e==='parcial'?'Parcial · falta '+eur(st.falta):'Por pagar · indicar'}</button>`})()}</div></div>`).join('')}</div>`;
+}
+function bindRegs(m){m.querySelectorAll('[data-reg]').forEach(el=>el.onclick=()=>openReg(S.regs.find(r=>r.id===el.dataset.reg)));m.querySelectorAll('[data-qp]').forEach(b=>b.onclick=e=>{e.stopPropagation();quickPay({reg:S.regs.find(r=>r.id===b.dataset.qp)})});m.querySelectorAll('[data-ed]').forEach(b=>b.onclick=e=>{e.stopPropagation();openReg(S.regs.find(r=>r.id===b.dataset.ed))})}
+function entOpts(sel,all){return (all?'<option value="">Todas as entidades</option>':'')+S.ents.map(e=>`<option value="${e.id}"${e.id===sel?' selected':''}>${esc(e.nome)}</option>`).join('')}
+function mesesDisponiveis(){const s=new Set(S.regs.map(r=>r.data.slice(0,7)));S.pags.forEach(p=>s.add(p.data.slice(0,7)));s.add(iso(new Date()).slice(0,7));return [...s].sort().reverse()}
+
+function vRegistos(m){
+  const list=S.regs.filter(r=>r.data.startsWith(FM)&&(!FE||r.ent===FE)).sort(sortReg);
+  const h=list.reduce((a,r)=>a+regHoras(r),0),v=list.reduce((a,r)=>a+regValor(r),0);
+  m.innerHTML=`<div class="filters"><select id="fm">${mesesDisponiveis().map(k=>`<option value="${k}"${k===FM?' selected':''}>${mLabel(k)}</option>`).join('')}</select>${S.ents.length>1?`<select id="fe">${entOpts(FE,true)}</select>`:''}</div>
+  <div class="grid" style="margin-bottom:12px"><div class="kpi"><div class="l">Horas</div><div class="v">${hh(h)}</div><div class="s">${new Set(list.map(r=>r.data)).size} dias</div></div><div class="kpi"><div class="l">Valor</div><div class="v">${eur(v)}</div><div class="s">${h?eur(v/h)+'/h média':''}</div></div></div>
+  <div class="card">${regList(list)}</div>
+  <div class="btns"><button class="btn sec sm" id="csv">Exportar mês (CSV)</button></div>`;
+  $('#fm').onchange=e=>{FM=e.target.value;render()};if($('#fe'))$('#fe').onchange=e=>{FE=e.target.value;render()};
+  $('#csv').onclick=()=>exportCSV(list,'registos-'+FM+'.csv');
+  bindRegs(m);
+}
+function vPags(m){
+  const list=[...S.pags].filter(p=>!FE||p.ent===FE).sort((a,b)=>b.data.localeCompare(a.data));
+  const tot=list.reduce((a,p)=>a+(+p.valor||0),0);
+  m.innerHTML=`${S.ents.length>1?`<div class="filters"><select id="fe">${entOpts(FE,true)}</select></div>`:''}
+  <div class="kpi" style="margin-bottom:12px"><div class="l">Total recebido</div><div class="v">${eur(tot)}</div><div class="s">${list.length} pagamentos</div></div>
+  <div class="card">${list.length?`<div class="list">${list.map(p=>`<div class="it" data-pag="${p.id}"><div><div class="t">${fdate(p.data)}</div><div class="d">${p.reg&&S.regs.find(r=>r.id===p.reg)?(()=>{const r=S.regs.find(r=>r.id===p.reg),a=p.adic&&adicsOf(r).find(x=>x.id===p.adic);return 'Dia '+fdate(r.data)+(a?' · adicional: '+esc(a.desc||''):'')})():p.mes?'Referente a '+mLabel(p.mes):'Sem mês (abate aos mais antigos)'}${S.ents.length>1?' · '+esc(ent(p.ent).nome):''}${p.metodo?' · '+esc(p.metodo):''}${p.nota?' · '+esc(p.nota):''}</div><button class="pbtn" data-pe="${p.id}">✏️ Editar</button></div><div class="a"><b>${eur(p.valor)}</b></div></div>`).join('')}</div>`:'<div class="empty">Sem pagamentos registados.<br>Toque em + para adicionar.</div>'}</div>`;
+  if($('#fe'))$('#fe').onchange=e=>{FE=e.target.value;render()};
+  m.querySelectorAll('[data-pag]').forEach(el=>el.onclick=()=>openPag(S.pags.find(p=>p.id===el.dataset.pag)));
+  m.querySelectorAll('[data-pe]').forEach(b=>b.onclick=e=>{e.stopPropagation();openPag(S.pags.find(p=>p.id===b.dataset.pe))});
+}
+function vMeses(m){
+  const {rows}=calc();const list=rows.filter(r=>!FE||r.ent===FE).sort((a,b)=>b.mes.localeCompare(a.mes)||a.ent.localeCompare(b.ent));
+  const T=k=>list.reduce((a,r)=>a+r[k],0);
+  m.innerHTML=`${S.ents.length>1?`<div class="filters"><select id="fe">${entOpts(FE,true)}</select></div>`:''}
+  <div class="card"><h2>Resumo mensal</h2><p class="muted" style="margin-top:-4px">Toque num mês por pagar para indicar o pagamento.</p>${list.length?`<div class="scroll"><table><thead><tr><th>Mês</th><th>Dias</th><th>Horas</th><th>Valor</th><th>Pago</th><th>Falta</th><th>Prazo</th><th>Estado</th></tr></thead><tbody>
+  ${list.map(r=>`<tr ${r.falta>0?`data-qm="${r.ent}|${r.mes}" style="cursor:pointer"`:''}><td>${mShort(r.mes)}${S.ents.length>1?`<div class="muted" style="font-size:11px">${esc(ent(r.ent).nome)}</div>`:''}</td><td>${r.diasN}</td><td>${hh(r.horas)}</td><td>${eur(r.valor)}</td><td>${eur(r.pago)}</td><td><b>${eur(r.falta)}</b></td><td>${fdate(r.prazo)}</td><td>${estTag(r.estado)}</td></tr>`).join('')}
+  </tbody><tfoot><tr><th>Total</th><th>${T('diasN')}</th><th>${hh(T('horas'))}</th><th>${eur(T('valor'))}</th><th>${eur(T('pago'))}</th><th>${eur(T('falta'))}</th><th></th><th></th></tr></tfoot></table></div>`:'<div class="empty">Sem dados</div>'}</div>
+  <div class="card"><h2>Estimativas</h2>${estimHTML()}</div>
+  <div class="btns"><button class="btn sec sm" id="csvm">Exportar resumo (CSV)</button></div>`;
+  bindQM(m);
+  if($('#fe'))$('#fe').onchange=e=>{FE=e.target.value;render()};
+  $('#csvm').onclick=()=>{const L=[['Mês','Entidade','Dias','Horas','Valor','Pago','Falta','Prazo','Estado']].concat(list.map(r=>[r.mes,ent(r.ent).nome,r.diasN,r.horas.toFixed(2),r.valor.toFixed(2),r.pago.toFixed(2),r.falta.toFixed(2),r.prazo,r.estado]));download('resumo-mensal.csv',toCSV(L))};
+}
+function estimHTML(){
+  const E=estimativa();const now=new Date();
+  const prox=[];for(let i=1;i<=3;i++){const k=iso(new Date(now.getFullYear(),now.getMonth()+i,1)).slice(0,7);
+    const base=E.media||E.proj;prox.push([k,base])}
+  return `<table><tbody>
+  <tr><td>${mLabel(E.mk)} (ritmo atual)</td><td><b>${eur(E.proj)}</b><div class="muted" style="font-size:11px">${eur(E.ganho)} já feito</div></td></tr>
+  ${prox.map(([k,v])=>`<tr><td>${mLabel(k)}</td><td>${v?eur(v):'—'}<div class="muted" style="font-size:11px">${E.nMed?'média últimos meses':'com base no mês atual'}</div></td></tr>`).join('')}
+  </tbody></table><p class="muted">A estimativa do mês atual extrapola o valor já registado pelos dias úteis que faltam (dias úteis definidos em Definições).</p>`;
+}
+function vConfig(m){
+  m.innerHTML=`<div class="card"><h2>Entidades (empregador / cliente)</h2>
+  ${S.ents.length?`<div class="list">${S.ents.map(e=>`<div class="it" data-ent="${e.id}"><div><div class="t">${esc(e.nome)}</div><div class="d">Prazo: ${e.prazoTipo==='dias'?e.prazo+' dias após o fim do mês':'dia '+e.prazo+' do mês seguinte'}${e.nif?' · NIF '+esc(e.nif):''}</div></div><div class="a"><b>${eur(e.valor)}/h</b></div></div>`).join('')}</div>`:'<div class="empty">Nenhuma entidade</div>'}
+  <button class="btn sm" id="ne" style="margin-top:8px">+ Nova entidade</button></div>
+  <div class="card"><h2>Dias úteis (para estimativas)</h2><div class="btns" id="dw">${[1,2,3,4,5,6,0].map(d=>`<button class="btn sm ${S.cfg.diasSemana.includes(d)?'':'sec'}" data-d="${d}">${DOW[d]}</button>`).join('')}</div></div>
+  <div class="card"><h2>🔒 PIN de acesso</h2>${KEY?`<p class="muted">PIN ativo (${PINLEN} dígitos). Os dados estão encriptados neste telemóvel e a app bloqueia ao fim de 1 minuto fora da app.</p><div class="btns"><button class="btn sec sm" id="pinc">Alterar PIN</button><button class="btn sec sm" id="pinl">Bloquear agora</button><button class="btn del sm" id="pind">Desativar PIN</button></div>`:`<p class="muted">Proteja o acesso à app com um PIN de 4 a 8 dígitos. Os dados ficam encriptados neste telemóvel.</p><button class="btn sm" id="pina">Ativar PIN</button>`}</div>
+  <div class="card"><h2>💾 Cópias de segurança</h2><p class="muted">Os dados ficam só neste telemóvel — se desinstalar a app, mudar de telemóvel ou limpar os dados do Chrome, perdem-se. Guarde a cópia num local seguro (Google Drive, email…).</p>
+  <p style="font-size:13.5px;margin:8px 0">Última cópia: <b>${S.cfg.ultBackup?fdate(S.cfg.ultBackup)+(diasAte(S.cfg.ultBackup)<0?' (há '+(-diasAte(S.cfg.ultBackup))+' dias)':' (hoje)'):'nunca'}</b></p>
+  <div class="btns"><button class="btn sm" id="exj">⬇ Exportar cópia de segurança</button><label class="btn sec sm" style="margin:0;color:var(--acc)">⬆ Importar cópia<input type="file" id="imp" accept=".json,application/json" style="display:none"></label></div>
+  ${KEY?'<label class="chk"><input type="checkbox" id="encb" checked> Proteger a cópia com o PIN (encriptada — só abre com o PIN)</label>':''}
+  <div class="btns" style="margin-top:12px"><button class="btn sec sm" id="csva">Exportar registos (CSV/Excel)</button></div></div>`;
+  m.querySelectorAll('[data-ent]').forEach(el=>el.onclick=()=>openEnt(S.ents.find(e=>e.id===el.dataset.ent)));
+  $('#ne').onclick=()=>openEnt();
+  m.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const d=+b.dataset.d,a=S.cfg.diasSemana;const i=a.indexOf(d);if(i>=0)a.splice(i,1);else a.push(d);save()});
+  $('#exj').onclick=()=>doExport($('#encb')?$('#encb').checked:false);
+  $('#csva').onclick=()=>exportCSV([...S.regs].sort(sortReg),'registos-todos.csv');
+  $('#imp').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)importFile(f)};
+  if($('#pina'))$('#pina').onclick=()=>pinModal('ativar');
+  if($('#pinc'))$('#pinc').onclick=()=>pinModal('alterar');
+  if($('#pind'))$('#pind').onclick=()=>pinModal('desativar');
+  if($('#pinl'))$('#pinl').onclick=lockNow;
+}
+
+// Modais
+function openM(html){$('#sheet').innerHTML=html;$('#modal').classList.add('on')}
+function closeM(){$('#modal').classList.remove('on')}
+function confirmM(txt,fn){openM(`<h3>Confirmar</h3><p>${esc(txt)}</p><div class="btns"><button class="btn del" id="cy">Sim</button><button class="btn sec" id="cn">Cancelar</button></div>`);$('#cy').onclick=()=>{closeM();fn()};$('#cn').onclick=closeM}
+
+function openReg(r,asNew){
+  const isNew=!r||!!asNew;const last=[...S.regs].sort(sortReg)[0];
+  r=r||{id:uid(),data:today(),ent:(last&&last.ent)||S.ents[0].id,modo:(last&&last.modo)||'horario',ini:(last&&last.ini)||'09:00',fim:(last&&last.fim)||'17:00',pausa:last?last.pausa:60,horas:'',valor:'',adics:[],nota:''};
+  if(r.valor==='')r.valor=ent(r.ent).valor;
+  let ads=(r.adics||[]).map(a=>({...a}));
+  openM(`<h3>${isNew?'Novo registo':'Editar registo'}</h3>
+  <div class="row ${S.ents.length>1?'r2':''}"><div><label>Data</label><input type="date" id="rd" value="${r.data}"></div>${S.ents.length>1?`<div><label>Entidade</label><select id="re">${entOpts(r.ent)}</select></div>`:''}</div>
+  <div class="row"><div><label>Registar por</label><select id="rm"><option value="horario"${r.modo!=='horas'?' selected':''}>Hora de entrada e saída</option><option value="horas"${r.modo==='horas'?' selected':''}>Total de horas</option></select></div></div>
+  <div class="row r3" id="bh"><div><label>Entrada</label><input type="time" id="ri" value="${r.ini||''}"></div><div><label>Saída</label><input type="time" id="rf" value="${r.fim||''}"></div><div><label>Pausa (min)</label><input type="number" inputmode="numeric" id="rp" value="${r.pausa||0}" min="0"></div></div>
+  <div class="row" id="bt"><div><label>Horas trabalhadas</label><input type="number" inputmode="decimal" step="0.25" id="rh" value="${r.horas||''}"></div></div>
+  <div class="row"><div><label>Valor à hora (€)</label><input type="number" inputmode="decimal" step="0.01" id="rv" value="${r.valor}"></div></div>
+  <div class="row"><div><label>Adicionais pedidos neste dia</label><div id="adl"></div><button class="pbtn" id="ada" type="button">+ Adicional</button></div></div>
+  <div class="row"><div><label>Notas</label><input id="rn" value="${esc(r.nota||'')}" placeholder="Local, tarefa…"></div></div>
+  <div class="calc" id="rc"></div>
+  ${isNew?'':(()=>{const st=regEstado(r);return `<div class="row"><div><label>Pagamento</label>${estTag(st.e)} ${st.e==='parcial'?'pago '+eur(st.pago)+' · falta '+eur(st.falta):''} <button class="pbtn" id="rqp">${st.e==='pago'?'Ver / alterar':'Indicar pagamento'}</button></div></div>`})()}
+  <div class="btns"><button class="btn" id="rs">Guardar</button>${isNew?'<button class="btn sec" id="rs2">Guardar e outro</button>':'<button class="btn sec" id="rdup">Duplicar</button><button class="btn del" id="rdel">Apagar</button>'}<button class="btn sec" id="rcan">Cancelar</button></div>`);
+  const cleanAds=()=>ads.filter(a=>String(a.desc||'').trim()||+a.valor).map(a=>({id:a.id,desc:String(a.desc||'').trim(),valor:+a.valor||0}));
+  const get=()=>({...r,data:$('#rd').value,ent:$('#re')?$('#re').value:r.ent,modo:$('#rm').value,ini:$('#ri').value,fim:$('#rf').value,pausa:+$('#rp').value||0,horas:+$('#rh').value||0,valor:+$('#rv').value||0,adics:cleanAds(),extra:0,nota:$('#rn').value.trim()});
+  const upd=()=>{const x=get();$('#bh').style.display=x.modo==='horas'?'none':'';$('#bt').style.display=x.modo==='horas'?'':'none';const at=adicTot(x);$('#rc').textContent=hh(regHoras(x))+' × '+eur(x.valor)+' = '+eur(regBase(x))+(at?' + adicionais '+eur(at)+' = '+eur(regValor(x)):'')};
+  const renderAds=()=>{$('#adl').innerHTML=ads.map((a,i)=>`<div class="adr"><input class="ad-d" data-i="${i}" value="${esc(a.desc||'')}" placeholder="Descrição (ex.: limpeza extra)"><input class="ad-v" data-i="${i}" type="number" inputmode="decimal" step="0.01" value="${a.valor===''||a.valor==null?'':a.valor}" placeholder="€"><button type="button" class="ad-x" data-i="${i}" aria-label="Remover">×</button></div>`).join('');
+    $('#adl').querySelectorAll('.ad-d').forEach(el=>el.oninput=()=>{ads[+el.dataset.i].desc=el.value;upd()});
+    $('#adl').querySelectorAll('.ad-v').forEach(el=>el.oninput=()=>{ads[+el.dataset.i].valor=el.value;upd()});
+    $('#adl').querySelectorAll('.ad-x').forEach(el=>el.onclick=()=>{ads.splice(+el.dataset.i,1);renderAds();upd()})};
+  $('#ada').onclick=()=>{ads.push({id:uid(),desc:'',valor:''});renderAds();const l=$('#adl').querySelectorAll('.ad-d');l[l.length-1].focus()};
+  renderAds();
+  $('#sheet').querySelectorAll('#rd,#re,#rm,#ri,#rf,#rp,#rh,#rv,#rn').forEach(i=>i.oninput=upd);
+  if($('#re'))$('#re').onchange=()=>{$('#rv').value=ent($('#re').value).valor;upd()};
+  upd();
+  const store=()=>{const x=get();if(!x.data){toast('Indique a data');return false}if(regHoras(x)<=0&&!x.adics.length){toast('Indique as horas');return false}
+    const i=S.regs.findIndex(y=>y.id===x.id);if(i>=0)S.regs[i]=x;else S.regs.push(x);
+    S.pags.forEach(p=>{if(p.reg===x.id&&p.adic&&!x.adics.some(a=>a.id===p.adic))delete p.adic});return x};
+  $('#rs').onclick=()=>{if(store()){closeM();save('Registo guardado')}};
+  if($('#rs2'))$('#rs2').onclick=()=>{const x=store();if(x){save('Registo guardado');const d=new Date(x.data+'T12:00');d.setDate(d.getDate()+1);openReg();$('#rd').value=iso(d)}};
+  if($('#rdup'))$('#rdup').onclick=()=>{const x=get();closeM();openReg({...x,id:uid(),adics:x.adics.map(a=>({...a,id:uid()}))},true)};
+  if($('#rdel'))$('#rdel').onclick=()=>confirmM('Apagar este registo?',()=>{S.regs=S.regs.filter(y=>y.id!==r.id);S.pags.forEach(p=>{if(p.reg===r.id){delete p.reg;delete p.adic}});save('Registo apagado')});
+  $('#rcan').onclick=closeM;
+  if($('#rqp'))$('#rqp').onclick=()=>quickPay({reg:r});
+}
+function pagsHTML(list){if(!list.length)return '';return `<label style="margin-top:4px">Pagamentos registados</label><div class="list" style="margin-bottom:10px">${list.sort((a,b)=>a.data.localeCompare(b.data)).map(p=>`<div class="it" style="cursor:default;padding:7px 2px"><div><div class="d" style="margin:0">${fdate(p.data)}${p.metodo?' · '+esc(p.metodo):''}${p.nota?' · '+esc(p.nota):''}</div></div><div class="a"><b>${eur(p.valor)}</b> <button class="pbtn" data-pe="${p.id}" style="margin:0 0 0 6px">✏️</button></div></div>`).join('')}</div>`}
+function bindPE(){$('#sheet').querySelectorAll('[data-pe]').forEach(b=>b.onclick=()=>openPag(S.pags.find(p=>p.id===b.dataset.pe)))}
+function quickPay(t){
+  const r=t.reg;
+  // Dia com adicionais: escolher o que foi pago
+  if(r&&!t.parte&&adicsOf(r).length){
+    const mp=mesPago(r);
+    const partes=[{k:'horas',nome:'Horas ('+hh(regHoras(r))+')',v:regBase(r),pg:pagoHoras(r)}].concat(adicsOf(r).map(a=>({k:a.id,nome:'Adicional: '+(a.desc||'sem descrição'),v:+a.valor||0,pg:pagoAdic(r,a)}))).filter(x=>x.v>0);
+    partes.forEach(x=>x.st=parteEst(x.v,x.pg,mp));
+    const falta=partes.reduce((a,x)=>a+x.st.falta,0);
+    openM(`<h3>Pagamento do dia</h3><p class="muted" style="margin-top:-6px">${dow(r.data)}, ${fdate(r.data)} · total ${eur(regValor(r))}${falta>0.004?' · falta <b>'+eur(falta)+'</b>':''}</p>
+    <div class="row"><div><label>Data do pagamento</label><input type="date" id="qd" value="${today()}"></div></div>
+    ${falta>0.004?`<button class="btn opt" id="qall">✓ Tudo pago na totalidade (${eur(falta)})</button>`:''}
+    <div class="list" style="margin-bottom:10px">${partes.map(x=>`<div class="it" style="cursor:default"><div><div class="t" style="font-weight:500">${esc(x.nome)}</div><div class="d">${eur(x.v)}${x.st.e==='parcial'?' · pago '+eur(x.st.pago)+' · falta '+eur(x.st.falta):''}</div></div><div class="a">${estTag(x.st.e)}<br><button class="pbtn" data-pt="${x.k}">${x.st.e==='pago'?'Alterar':'Indicar'}</button></div></div>`).join('')}</div>
+    ${pagsHTML(S.pags.filter(p=>p.reg===r.id))}
+    ${regPagoLig(r)>0?'<button class="btn del sm opt" id="qx">Anular todos os pagamentos deste dia</button>':''}
+    <button class="btn sec opt" id="qc">Fechar</button>`);
+    if($('#qall'))$('#qall').onclick=()=>{const d=$('#qd').value||today();partes.forEach(x=>{if(x.st.falta>0.004)S.pags.push({id:uid(),data:d,ent:r.ent,valor:x.st.falta,mes:r.data.slice(0,7),reg:r.id,adic:x.k==='horas'?undefined:x.k,metodo:'',nota:''})});closeM();save('Pagamento registado')};
+    $('#sheet').querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>quickPay({reg:r,parte:b.dataset.pt}));
+    if($('#qx'))$('#qx').onclick=()=>confirmM('Anular todos os pagamentos registados para este dia?',()=>{S.pags=S.pags.filter(p=>p.reg!==r.id);save('Marcado como por pagar')});
+    bindPE();$('#qc').onclick=closeM;return;
+  }
+  let titulo,falta,total,ent_,mes,regId=null,adicId,jaLig=0,filt=null;
+  if(r){const mp=mesPago(r);regId=r.id;ent_=r.ent;mes=r.data.slice(0,7);
+    const a=t.parte&&t.parte!=='horas'?adicsOf(r).find(x=>x.id===t.parte):null;
+    if(a){adicId=a.id;total=+a.valor||0;jaLig=pagoAdic(r,a);filt=p=>p.reg===r.id&&p.adic===a.id;titulo=`${dow(r.data)}, ${fdate(r.data)} · adicional: ${a.desc||'sem descrição'}`}
+    else{total=regBase(r);jaLig=pagoHoras(r);filt=p=>p.reg===r.id&&!p.adic;titulo=`${dow(r.data)}, ${fdate(r.data)} · ${hh(regHoras(r))}`}
+    falta=parteEst(total,jaLig,mp).falta}
+  else{const row=CALC.rows.find(x=>x.ent===t.ent&&x.mes===t.mes);ent_=t.ent;mes=t.mes;total=row?row.valor:0;falta=row?row.falta:0;titulo=mLabel(mes)+(S.ents.length>1?' · '+ent(ent_).nome:'')}
+  openM(`<h3>Pagamento</h3><p class="muted" style="margin-top:-6px">${esc(titulo)}<br>Valor: <b>${eur(total)}</b>${falta<total-0.004?` · já pago ${eur(total-falta)}`:''} · falta <b>${eur(falta)}</b></p>
+  <div class="row"><div><label>Data do pagamento</label><input type="date" id="qd" value="${today()}"></div></div>
+  ${falta>0.004?`<button class="btn opt" id="qt">✓ Pago na totalidade (${eur(falta)})</button>
+  <div class="row r2" style="align-items:end"><div><label>Pago em parte — valor (€)</label><input type="number" inputmode="decimal" step="0.01" id="qv" placeholder="0,00"></div><div><button class="btn sec" id="qp" style="width:100%">Registar valor</button></div></div>`:'<p>Já está totalmente pago.</p>'}
+  ${pagsHTML(S.pags.filter(filt||(p=>!p.reg&&p.ent===ent_&&p.mes===mes)))}
+  ${filt&&jaLig>0?'<button class="btn del sm opt" id="qx" style="margin-top:6px">Anular pagamento (marcar por pagar)</button>':''}
+  <button class="btn sec opt" id="qc">${r&&t.parte&&adicsOf(r).length?'Voltar':'Fechar'}</button>`);
+  const back=()=>{if(r&&t.parte&&adicsOf(r).length)quickPay({reg:S.regs.find(x=>x.id===r.id)||r});else closeM()};
+  const add=v=>{const d=$('#qd').value||today();S.pags.push({id:uid(),data:d,ent:ent_,valor:Math.round(v*100)/100,mes,reg:regId||undefined,adic:adicId,metodo:'',nota:''});save('Pagamento registado');back()};
+  if($('#qt'))$('#qt').onclick=()=>add(falta);
+  if($('#qp'))$('#qp').onclick=()=>{const v=+String($('#qv').value).replace(',','.');if(!(v>0)){toast('Indique o valor pago');return}add(v)};
+  if($('#qx'))$('#qx').onclick=()=>{S.pags=S.pags.filter(p=>!filt(p));save('Marcado como por pagar');back()};
+  bindPE();$('#qc').onclick=back;
+}
+function openPag(p){
+  const isNew=!p;const {rows}=calc();
+  const ab=rows.filter(r=>r.falta>0).sort((a,b)=>a.mes.localeCompare(b.mes));
+  p=p||{id:uid(),data:today(),ent:(ab[0]&&ab[0].ent)||S.ents[0].id,valor:ab[0]?ab[0].falta:'',mes:ab[0]?ab[0].mes:'',metodo:'Transferência',nota:''};
+  const meses=[...new Set(rows.map(r=>r.mes).concat(p.mes?[p.mes]:[]))].sort().reverse();
+  openM(`<h3>${isNew?'Novo pagamento recebido':'Editar pagamento'}</h3>
+  <div class="row r2"><div><label>Data do pagamento</label><input type="date" id="pd" value="${p.data}"></div><div><label>Valor (€)</label><input type="number" inputmode="decimal" step="0.01" id="pv" value="${p.valor}"></div></div>
+  ${S.ents.length>1?`<div class="row"><div><label>Entidade</label><select id="pe">${entOpts(p.ent)}</select></div></div>`:''}
+  <div class="row"><div><label>Referente ao mês</label><select id="pm"><option value="">Sem mês — abater aos mais antigos</option>${meses.map(k=>{const r=rows.find(x=>x.mes===k&&x.ent===p.ent);return `<option value="${k}"${k===p.mes?' selected':''}>${mLabel(k)}${r&&r.falta>0?' (falta '+eur(r.falta)+')':''}</option>`}).join('')}</select></div></div>
+  <div class="row r2"><div><label>Método</label><select id="pt">${['Transferência','MB Way','Numerário','Cheque','Outro'].map(o=>`<option${o===p.metodo?' selected':''}>${o}</option>`).join('')}</select></div><div><label>Notas</label><input id="pn" value="${esc(p.nota||'')}"></div></div>
+  <div class="btns"><button class="btn" id="ps">Guardar</button>${isNew?'':'<button class="btn del" id="pdel">Apagar</button>'}<button class="btn sec" id="pc">Cancelar</button></div>`);
+  $('#ps').onclick=()=>{const x={...p,data:$('#pd').value,valor:+$('#pv').value||0,ent:$('#pe')?$('#pe').value:p.ent,mes:$('#pm').value,metodo:$('#pt').value,nota:$('#pn').value.trim()};
+    if(!x.data||x.valor<=0){toast('Indique data e valor');return}const i=S.pags.findIndex(y=>y.id===x.id);if(i>=0)S.pags[i]=x;else S.pags.push(x);closeM();save('Pagamento guardado')};
+  if($('#pdel'))$('#pdel').onclick=()=>confirmM('Apagar este pagamento?',()=>{S.pags=S.pags.filter(y=>y.id!==p.id);save('Pagamento apagado')});
+  $('#pc').onclick=closeM;
+}
+function openEnt(e){
+  const isNew=!e;e=e||{id:uid(),nome:'',valor:'',prazoTipo:'dia',prazo:8,nif:''};
+  openM(`<h3>${isNew?'Nova entidade':'Editar entidade'}</h3>
+  <div class="row"><div><label>Nome (empregador / cliente)</label><input id="en" value="${esc(e.nome)}" placeholder="Ex.: Empresa X"></div></div>
+  <div class="row r2"><div><label>Valor à hora (€)</label><input type="number" inputmode="decimal" step="0.01" id="ev" value="${e.valor}"></div><div><label>NIF (opcional)</label><input id="ef" value="${esc(e.nif||'')}"></div></div>
+  <div class="row r2"><div><label>Prazo de pagamento</label><select id="et"><option value="dia"${e.prazoTipo!=='dias'?' selected':''}>Até ao dia X do mês seguinte</option><option value="dias"${e.prazoTipo==='dias'?' selected':''}>X dias após o fim do mês</option></select></div><div><label>X</label><input type="number" inputmode="numeric" id="ep" value="${e.prazo}" min="0"></div></div>
+  <div class="btns"><button class="btn" id="es">Guardar</button>${isNew?'':'<button class="btn del" id="edel">Apagar</button>'}<button class="btn sec" id="ec">Cancelar</button></div>
+  ${isNew?'':'<p class="muted">Alterar o valor à hora só afeta registos novos.</p>'}`);
+  $('#es').onclick=()=>{const x={...e,nome:$('#en').value.trim(),valor:+$('#ev').value||0,nif:$('#ef').value.trim(),prazoTipo:$('#et').value,prazo:+$('#ep').value||0};
+    if(!x.nome){toast('Indique o nome');return}const i=S.ents.findIndex(y=>y.id===x.id);if(i>=0)S.ents[i]=x;else S.ents.push(x);if(S.ents.length===1&&!S.regs.length)TAB='resumo';closeM();save('Entidade guardada')};
+  if($('#edel'))$('#edel').onclick=()=>{if(S.regs.some(r=>r.ent===e.id)||S.pags.some(p=>p.ent===e.id)){toast('Tem registos associados');return}confirmM('Apagar esta entidade?',()=>{S.ents=S.ents.filter(y=>y.id!==e.id);save()})};
+  $('#ec').onclick=closeM;
+}
+
+// Exportação
+function toCSV(rows){return '﻿'+rows.map(r=>r.map(c=>{c=String(c==null?'':c);return /[;"\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c}).join(';')).join('\n')}
+function exportCSV(list,fn){const L=[['Data','Dia','Entidade','Entrada','Saída','Pausa (min)','Horas','Valor/h','Valor horas','Adicionais (€)','Adicionais','Total','Estado pagamento','Notas']].concat(list.map(r=>[r.data,dow(r.data),ent(r.ent).nome,r.modo==='horas'?'':r.ini,r.modo==='horas'?'':r.fim,r.modo==='horas'?'':r.pausa,regHoras(r).toFixed(2).replace('.',','),String(r.valor).replace('.',','),regBase(r).toFixed(2).replace('.',','),adicTot(r).toFixed(2).replace('.',','),adicsOf(r).map(a=>(a.desc||'Adicional')+' '+(+a.valor||0).toFixed(2).replace('.',',')).join(' | '),regValor(r).toFixed(2).replace('.',','),{pago:'Pago',parcial:'Parcial',pendente:'Por pagar'}[regEstado(r).e],r.nota||'']));download(fn,toCSV(L))}
+async function download(fn,txt,type){
+  if(DL){try{await DL.save({filename:fn,data:txt});toast('Ficheiro guardado');return true}catch(e){if(e&&(e.code==='declined'||e.code==='rate_limited')){toast('Transferência cancelada');return}}}
+  try{const u=URL.createObjectURL(new Blob([txt],{type:(type||'text/csv')+';charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Ficheiro transferido');return true}catch(e){}
+  try{await navigator.clipboard.writeText(txt);toast('Conteúdo copiado')}catch(e){toast('Não foi possível exportar')}
+}
+
+// Cópias de segurança
+async function doExport(enc){
+  try{const nome='horas-backup-'+today()+(enc?'-protegida':'')+'.json';
+    const obj=enc?Object.assign(await encObj(S,KEY,SALT,PINLEN),{exportado:new Date().toISOString()}):Object.assign({},S,{exportado:new Date().toISOString()});
+    const ok=await download(nome,JSON.stringify(obj,null,enc?0:1),'application/json');
+    if(ok){S.cfg.ultBackup=today();save()}}catch(e){toast('Não foi possível exportar')}
+}
+function importFile(f){const rd=new FileReader();rd.onload=()=>{let d;try{d=JSON.parse(rd.result)}catch(x){toast('Ficheiro inválido');return}
+  const aplicar=data=>{if(!data||!data.regs||!data.ents){toast('Ficheiro inválido');return}
+    confirmM(`Importar esta cópia (${data.regs.length} registos, ${(data.pags||[]).length} pagamentos)? Os dados atuais serão substituídos.`,()=>{const ub=S.cfg.ultBackup;S=norm(data);delete S.exportado;if(ub&&!(S.cfg.ultBackup>ub))S.cfg.ultBackup=ub;save('Cópia importada')})};
+  if(d&&d.enc){openM(`<h3>Cópia protegida</h3><p class="muted">Esta cópia está encriptada. Introduza o PIN que estava ativo quando foi feita.</p><div class="row"><div><label>PIN da cópia</label><input type="password" inputmode="numeric" id="ipin" autocomplete="off"></div></div><div class="btns"><button class="btn" id="iok">Abrir</button><button class="btn sec" id="ican">Cancelar</button></div>`);
+    $('#ipin').focus();$('#ican').onclick=closeM;
+    $('#iok').onclick=async()=>{try{const k=await deriveKey($('#ipin').value,d.salt);const data=await decObj(d,k);closeM();aplicar(data)}catch(e){toast('PIN errado');$('#ipin').value=''}}}
+  else aplicar(d)};rd.readAsText(f)}
+
+// PIN
+function pinModal(modo){
+  const precisaAtual=modo!=='ativar',precisaNovo=modo!=='desativar';
+  openM(`<h3>${{ativar:'Ativar PIN',alterar:'Alterar PIN',desativar:'Desativar PIN'}[modo]}</h3>
+  ${precisaAtual?'<div class="row"><div><label>PIN atual</label><input type="password" inputmode="numeric" id="pa" autocomplete="off"></div></div>':''}
+  ${precisaNovo?'<div class="row r2"><div><label>Novo PIN (4 a 8 dígitos)</label><input type="password" inputmode="numeric" id="pn1" autocomplete="off"></div><div><label>Repetir PIN</label><input type="password" inputmode="numeric" id="pn2" autocomplete="off"></div></div><p class="muted">Se esquecer o PIN não há forma de recuperar os dados — só a partir de uma cópia de segurança.</p>':''}
+  <div class="btns"><button class="btn" id="pok">Confirmar</button><button class="btn sec" id="pcan">Cancelar</button></div>`);
+  $('#pcan').onclick=closeM;
+  $('#pok').onclick=async()=>{
+    if(precisaAtual){await saveChain;try{const w=JSON.parse(localStorage.getItem(LK));const k=await deriveKey($('#pa').value,w.salt);await decObj(w,k)}catch(e){toast('PIN atual errado');return}}
+    if(precisaNovo){const a=$('#pn1').value,b=$('#pn2').value;if(!/^\d{4,8}$/.test(a)){toast('O PIN deve ter 4 a 8 dígitos');return}if(a!==b){toast('Os PIN não coincidem');return}
+      SALT=newSalt();KEY=await deriveKey(a,SALT);PINLEN=a.length}
+    else{KEY=null;SALT=null;PINLEN=0}
+    closeM();await persist();shell();render();toast(modo==='desativar'?'PIN desativado':'PIN guardado')};
+}
+function lockNow(){if(!KEY)return;persist().then(()=>{S=null;KEY=null;lockScreen()})}
+let pinBuf='',fails=0,blockUntil=0;
+function lockScreen(){
+  let w=null;try{w=JSON.parse(localStorage.getItem(LK))}catch(e){}
+  if(!w||!w.enc){S=norm(w);shell();render();return}
+  const len=w.len||4;pinBuf='';
+  document.getElementById('app').innerHTML=`<div class="lock"><div class="lk-ic">🔒</div><h2>Registo de Horas</h2><p id="lkm">Introduza o PIN</p><div class="dots" id="dots">${'<i></i>'.repeat(len)}</div>
+  <div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k=>k===''?'<span></span>':`<button data-k="${k}">${k}</button>`).join('')}</div><button class="lnk" id="esq">Esqueci-me do PIN</button></div>`;
+  const dots=()=>document.querySelectorAll('#dots i').forEach((d,i)=>d.classList.toggle('f',i<pinBuf.length));
+  const msg=t=>{$('#lkm').textContent=t};
+  const tentar=async()=>{
+    if(Date.now()<blockUntil){msg('Aguarde '+Math.ceil((blockUntil-Date.now())/1000)+' s');pinBuf='';dots();return}
+    msg('A verificar…');
+    try{const k=await deriveKey(pinBuf,w.salt);const d=await decObj(w,k);KEY=k;SALT=w.salt;PINLEN=len;S=norm(d);fails=0;shell();render()}
+    catch(e){fails++;pinBuf='';dots();const el=$('#dots');el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');
+      if(fails>=5){blockUntil=Date.now()+30000*Math.pow(2,fails-5);msg('Demasiadas tentativas — aguarde '+Math.round((blockUntil-Date.now())/1000)+' s')}else msg('PIN errado')}};
+  document.querySelectorAll('.pad [data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
+    if(k==='⌫')pinBuf=pinBuf.slice(0,-1);else if(pinBuf.length<len)pinBuf+=k;dots();if(pinBuf.length===len)tentar()});
+  document.onkeydown=e=>{if(!$('.lock'))return;if(/^\d$/.test(e.key)&&pinBuf.length<len){pinBuf+=e.key;dots();if(pinBuf.length===len)tentar()}else if(e.key==='Backspace'){pinBuf=pinBuf.slice(0,-1);dots()}};
+  $('#esq').onclick=()=>{document.getElementById('app').innerHTML=`<div class="lock"><div class="lk-ic">⚠️</div><h2>Esqueceu-se do PIN?</h2><p style="max-width:320px;margin-top:8px">Por segurança, os dados só abrem com o PIN. A única solução é apagar os dados deste telemóvel e depois importar uma cópia de segurança.</p>
+    <p style="margin-top:16px;font-size:13px">Para confirmar, escreva <b>APAGAR</b>:</p><input id="apg" style="max-width:220px;margin-top:8px;text-align:center" autocomplete="off"><button class="btn" id="apgok" style="margin-top:12px;background:#b42318;color:#fff">Apagar dados</button><button class="lnk" id="volt">Voltar</button></div>`;
+    $('#volt').onclick=lockScreen;$('#apgok').onclick=()=>{if($('#apg').value.trim().toUpperCase()!=='APAGAR')return;try{localStorage.removeItem(LK)}catch(e){}KEY=null;SALT=null;PINLEN=0;S=norm(null);TAB='config';shell();render();toast('Dados apagados — pode importar uma cópia')}};
+}
+let hiddenAt=0;
+document.addEventListener('visibilitychange',()=>{if(document.hidden)hiddenAt=Date.now();else if(KEY&&hiddenAt&&Date.now()-hiddenAt>60000)lockNow()});
+
+if(START_LOCKED)lockScreen();else{shell();render()}
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+if('serviceWorker' in navigator&&location.protocol==='https:'){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+})();
+</script>
+</body>
+</html>
