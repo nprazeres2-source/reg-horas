@@ -261,6 +261,7 @@ function vResumo(m){
     ${abertos.length?`<div class="list">${abertos.map(r=>{const d=diasAte(r.prazo);return `<div class="it" data-mes="${r.mes}"><div><div class="t">${mLabel(r.mes)}</div><div class="d">${esc(ent(r.ent).nome)} · prazo ${fdate(r.prazo)} · ${d<0?`<b style="color:var(--bad)">${-d} dias de atraso</b>`:d===0?'<b>hoje</b>':`faltam ${d} dias`}</div></div><div class="a"><b>${eur(r.falta)}</b><div class="d">${estTag(r.estado)}</div><button class="pbtn" data-qm="${r.ent}|${r.mes}">Indicar pagamento</button></div></div>`}).join('')}</div>`:'<div class="empty">Tudo pago 👍</div>'}
     ${totCred>0.004?`<p class="muted">Crédito a seu favor (pago a mais): <b>${eur(totCred)}</b></p>`:''}
   </div>
+  <div class="card"><h2>📄 Relatório em PDF</h2><p class="muted" style="margin:-4px 0 10px">Lista de dias e horas trabalhados, por dia ou agrupada por tarefa — sem indicação de pagamentos.</p><button class="btn sm" id="pdfr">Gerar PDF</button></div>
   <div class="card"><h2>Ano ${ano}</h2>
     <div class="grid"><div><div class="muted">Ganho</div><b>${eur(ganhoAno)}</b></div><div><div class="muted">Recebido</div><b>${eur(pagoAno)}</b></div>
     <div><div class="muted">Horas</div><b>${hh(rAno.reduce((a,r)=>a+r.horas,0))}</b></div><div><div class="muted">Dias trabalhados</div><b>${rAno.reduce((a,r)=>a+r.diasN,0)}</b></div></div></div>
@@ -269,12 +270,13 @@ function vResumo(m){
   bindQM(m);
   bindRegs(m);
   if($('#bkn'))$('#bkn').onclick=()=>doExport(!!KEY);
+  $('#pdfr').onclick=()=>pdfModal({mes:iso(new Date()).slice(0,7)});
 }
 const sortReg=(a,b)=>(b.data+(b.ini||'')).localeCompare(a.data+(a.ini||''));
 function bindQM(m){m.querySelectorAll('[data-qm]').forEach(b=>b.onclick=e=>{e.stopPropagation();const [en,mes]=b.dataset.qm.split('|');quickPay({ent:en,mes})})}
 function regList(list){
   if(!list.length)return '<div class="empty">Sem registos</div>';
-  return `<div class="list">${list.map(r=>`<div class="it" data-reg="${r.id}"><div><div class="t">${dow(r.data)}, ${fdate(r.data)}</div><div class="d">${r.modo==='horas'?'':`${r.ini}–${r.fim}${+r.pausa?` · pausa ${r.pausa} min`:''} · `}${hh(regHoras(r))}${S.ents.length>1?' · '+esc(ent(r.ent).nome):''}${r.nota?' · '+esc(r.nota):''}</div>${adicsOf(r).map(a=>{const st=parteEst(+a.valor||0,pagoAdic(r,a),mesPago(r));return `<div class="d">➕ ${esc(a.desc||'Adicional')} · ${eur(a.valor)} ${+a.valor?estTag(st.e):''}</div>`}).join('')}<button class="pbtn" data-ed="${r.id}">✏️ Editar</button></div><div class="a"><b>${eur(regValor(r))}</b><div class="d">${eur(r.valor)}/h${adicsOf(r).length?' + '+eur(adicTot(r)):''}</div>${(()=>{const st=regEstado(r);return st.e==='pago'?'<div class="d">'+estTag('pago')+'</div>':`<button class="pbtn" data-qp="${r.id}">${st.e==='parcial'?'Parcial · falta '+eur(st.falta):'Por pagar · indicar'}</button>`})()}</div></div>`).join('')}</div>`;
+  return `<div class="list">${list.map(r=>`<div class="it" data-reg="${r.id}"><div><div class="t">${dow(r.data)}, ${fdate(r.data)}${r.tarefa?' · <span style="color:var(--acc)">'+esc(r.tarefa)+'</span>':''}</div><div class="d">${r.modo==='horas'?'':`${r.ini}–${r.fim}${+r.pausa?` · pausa ${r.pausa} min`:''} · `}${hh(regHoras(r))}${S.ents.length>1?' · '+esc(ent(r.ent).nome):''}${r.nota?' · '+esc(r.nota):''}</div>${adicsOf(r).map(a=>{const st=parteEst(+a.valor||0,pagoAdic(r,a),mesPago(r));return `<div class="d">➕ ${esc(a.desc||'Adicional')} · ${eur(a.valor)} ${+a.valor?estTag(st.e):''}</div>`}).join('')}<button class="pbtn" data-ed="${r.id}">✏️ Editar</button></div><div class="a"><b>${eur(regValor(r))}</b><div class="d">${eur(r.valor)}/h${adicsOf(r).length?' + '+eur(adicTot(r)):''}</div>${(()=>{const st=regEstado(r);return st.e==='pago'?'<div class="d">'+estTag('pago')+'</div>':`<button class="pbtn" data-qp="${r.id}">${st.e==='parcial'?'Parcial · falta '+eur(st.falta):'Por pagar · indicar'}</button>`})()}</div></div>`).join('')}</div>`;
 }
 function bindRegs(m){m.querySelectorAll('[data-reg]').forEach(el=>el.onclick=()=>openReg(S.regs.find(r=>r.id===el.dataset.reg)));m.querySelectorAll('[data-qp]').forEach(b=>b.onclick=e=>{e.stopPropagation();quickPay({reg:S.regs.find(r=>r.id===b.dataset.qp)})});m.querySelectorAll('[data-ed]').forEach(b=>b.onclick=e=>{e.stopPropagation();openReg(S.regs.find(r=>r.id===b.dataset.ed))})}
 function entOpts(sel,all){return (all?'<option value="">Todas as entidades</option>':'')+S.ents.map(e=>`<option value="${e.id}"${e.id===sel?' selected':''}>${esc(e.nome)}</option>`).join('')}
@@ -286,9 +288,10 @@ function vRegistos(m){
   m.innerHTML=`<div class="filters"><select id="fm">${mesesDisponiveis().map(k=>`<option value="${k}"${k===FM?' selected':''}>${mLabel(k)}</option>`).join('')}</select>${S.ents.length>1?`<select id="fe">${entOpts(FE,true)}</select>`:''}</div>
   <div class="grid" style="margin-bottom:12px"><div class="kpi"><div class="l">Horas</div><div class="v">${hh(h)}</div><div class="s">${new Set(list.map(r=>r.data)).size} dias</div></div><div class="kpi"><div class="l">Valor</div><div class="v">${eur(v)}</div><div class="s">${h?eur(v/h)+'/h média':''}</div></div></div>
   <div class="card">${regList(list)}</div>
-  <div class="btns"><button class="btn sec sm" id="csv">Exportar mês (CSV)</button></div>`;
+  <div class="btns"><button class="btn sm" id="pdfb">📄 Gerar PDF</button><button class="btn sec sm" id="csv">Exportar mês (CSV)</button></div>`;
   $('#fm').onchange=e=>{FM=e.target.value;render()};if($('#fe'))$('#fe').onchange=e=>{FE=e.target.value;render()};
   $('#csv').onclick=()=>exportCSV(list,'registos-'+FM+'.csv');
+  $('#pdfb').onclick=()=>pdfModal({mes:FM,ent:FE});
   bindRegs(m);
 }
 function vPags(m){
@@ -363,12 +366,13 @@ function openReg(r,asNew){
   <div class="row" id="bt"><div><label>Horas trabalhadas</label><input type="number" inputmode="decimal" step="0.25" id="rh" value="${r.horas||''}"></div></div>
   <div class="row"><div><label>Valor à hora (€)</label><input type="number" inputmode="decimal" step="0.01" id="rv" value="${r.valor}"></div></div>
   <div class="row"><div><label>Adicionais pedidos neste dia</label><div id="adl"></div><button class="pbtn" id="ada" type="button">+ Adicional</button></div></div>
-  <div class="row"><div><label>Notas</label><input id="rn" value="${esc(r.nota||'')}" placeholder="Local, tarefa…"></div></div>
+  <div class="row"><div><label>Tarefa</label><input id="rt" list="tarefasDL" value="${esc(r.tarefa||'')}" placeholder="Ex.: Limpeza, Jardinagem, Receção…" autocomplete="off"><datalist id="tarefasDL">${tarefasLista().map(t=>`<option value="${esc(t)}">`).join('')}</datalist></div></div>
+  <div class="row"><div><label>Notas</label><input id="rn" value="${esc(r.nota||'')}" placeholder="Local, observações…"></div></div>
   <div class="calc" id="rc"></div>
   ${isNew?'':(()=>{const st=regEstado(r);return `<div class="row"><div><label>Pagamento</label>${estTag(st.e)} ${st.e==='parcial'?'pago '+eur(st.pago)+' · falta '+eur(st.falta):''} <button class="pbtn" id="rqp">${st.e==='pago'?'Ver / alterar':'Indicar pagamento'}</button></div></div>`})()}
   <div class="btns"><button class="btn" id="rs">Guardar</button>${isNew?'<button class="btn sec" id="rs2">Guardar e outro</button>':'<button class="btn sec" id="rdup">Duplicar</button><button class="btn del" id="rdel">Apagar</button>'}<button class="btn sec" id="rcan">Cancelar</button></div>`);
   const cleanAds=()=>ads.filter(a=>String(a.desc||'').trim()||+a.valor).map(a=>({id:a.id,desc:String(a.desc||'').trim(),valor:+a.valor||0}));
-  const get=()=>({...r,data:$('#rd').value,ent:$('#re')?$('#re').value:r.ent,modo:$('#rm').value,ini:$('#ri').value,fim:$('#rf').value,pausa:+$('#rp').value||0,horas:+$('#rh').value||0,valor:+$('#rv').value||0,adics:cleanAds(),extra:0,nota:$('#rn').value.trim()});
+  const get=()=>({...r,data:$('#rd').value,ent:$('#re')?$('#re').value:r.ent,modo:$('#rm').value,ini:$('#ri').value,fim:$('#rf').value,pausa:+$('#rp').value||0,horas:+$('#rh').value||0,valor:+$('#rv').value||0,adics:cleanAds(),extra:0,tarefa:$('#rt').value.trim(),nota:$('#rn').value.trim()});
   const upd=()=>{const x=get();$('#bh').style.display=x.modo==='horas'?'none':'';$('#bt').style.display=x.modo==='horas'?'':'none';const at=adicTot(x);$('#rc').textContent=hh(regHoras(x))+' × '+eur(x.valor)+' = '+eur(regBase(x))+(at?' + adicionais '+eur(at)+' = '+eur(regValor(x)):'')};
   const renderAds=()=>{$('#adl').innerHTML=ads.map((a,i)=>`<div class="adr"><input class="ad-d" data-i="${i}" value="${esc(a.desc||'')}" placeholder="Descrição (ex.: limpeza extra)"><input class="ad-v" data-i="${i}" type="number" inputmode="decimal" step="0.01" value="${a.valor===''||a.valor==null?'':a.valor}" placeholder="€"><button type="button" class="ad-x" data-i="${i}" aria-label="Remover">×</button></div>`).join('');
     $('#adl').querySelectorAll('.ad-d').forEach(el=>el.oninput=()=>{ads[+el.dataset.i].desc=el.value;upd()});
@@ -376,7 +380,7 @@ function openReg(r,asNew){
     $('#adl').querySelectorAll('.ad-x').forEach(el=>el.onclick=()=>{ads.splice(+el.dataset.i,1);renderAds();upd()})};
   $('#ada').onclick=()=>{ads.push({id:uid(),desc:'',valor:''});renderAds();const l=$('#adl').querySelectorAll('.ad-d');l[l.length-1].focus()};
   renderAds();
-  $('#sheet').querySelectorAll('#rd,#re,#rm,#ri,#rf,#rp,#rh,#rv,#rn').forEach(i=>i.oninput=upd);
+  $('#sheet').querySelectorAll('#rd,#re,#rm,#ri,#rf,#rp,#rh,#rv,#rn,#rt').forEach(i=>i.oninput=upd);
   if($('#re'))$('#re').onchange=()=>{$('#rv').value=ent($('#re').value).valor;upd()};
   upd();
   const store=()=>{const x=get();if(!x.data){toast('Indique a data');return false}if(regHoras(x)<=0&&!x.adics.length){toast('Indique as horas');return false}
@@ -464,11 +468,127 @@ function openEnt(e){
 
 // Exportação
 function toCSV(rows){return '﻿'+rows.map(r=>r.map(c=>{c=String(c==null?'':c);return /[;"\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c}).join(';')).join('\n')}
-function exportCSV(list,fn){const L=[['Data','Dia','Entidade','Entrada','Saída','Pausa (min)','Horas','Valor/h','Valor horas','Adicionais (€)','Adicionais','Total','Estado pagamento','Notas']].concat(list.map(r=>[r.data,dow(r.data),ent(r.ent).nome,r.modo==='horas'?'':r.ini,r.modo==='horas'?'':r.fim,r.modo==='horas'?'':r.pausa,regHoras(r).toFixed(2).replace('.',','),String(r.valor).replace('.',','),regBase(r).toFixed(2).replace('.',','),adicTot(r).toFixed(2).replace('.',','),adicsOf(r).map(a=>(a.desc||'Adicional')+' '+(+a.valor||0).toFixed(2).replace('.',',')).join(' | '),regValor(r).toFixed(2).replace('.',','),{pago:'Pago',parcial:'Parcial',pendente:'Por pagar'}[regEstado(r).e],r.nota||'']));download(fn,toCSV(L))}
+function exportCSV(list,fn){const L=[['Data','Dia','Entidade','Tarefa','Entrada','Saída','Pausa (min)','Horas','Valor/h','Valor horas','Adicionais (€)','Adicionais','Total','Estado pagamento','Notas']].concat(list.map(r=>[r.data,dow(r.data),ent(r.ent).nome,r.tarefa||'',r.modo==='horas'?'':r.ini,r.modo==='horas'?'':r.fim,r.modo==='horas'?'':r.pausa,regHoras(r).toFixed(2).replace('.',','),String(r.valor).replace('.',','),regBase(r).toFixed(2).replace('.',','),adicTot(r).toFixed(2).replace('.',','),adicsOf(r).map(a=>(a.desc||'Adicional')+' '+(+a.valor||0).toFixed(2).replace('.',',')).join(' | '),regValor(r).toFixed(2).replace('.',','),{pago:'Pago',parcial:'Parcial',pendente:'Por pagar'}[regEstado(r).e],r.nota||'']));download(fn,toCSV(L))}
 async function download(fn,txt,type){
+  const bin=txt instanceof Uint8Array;
   if(DL){try{await DL.save({filename:fn,data:txt});toast('Ficheiro guardado');return true}catch(e){if(e&&(e.code==='declined'||e.code==='rate_limited')){toast('Transferência cancelada');return}}}
-  try{const u=URL.createObjectURL(new Blob([txt],{type:(type||'text/csv')+';charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Ficheiro transferido');return true}catch(e){}
+  try{const u=URL.createObjectURL(new Blob([txt],{type:bin?type:(type||'text/csv')+';charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Ficheiro transferido');return true}catch(e){}
+  if(bin){toast('Não foi possível transferir');return}
   try{await navigator.clipboard.writeText(txt);toast('Conteúdo copiado')}catch(e){toast('Não foi possível exportar')}
+}
+
+// Relatório PDF
+function tarefasLista(){return [...new Set(S.regs.map(r=>(r.tarefa||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'))}
+let PDFLIB=null;
+function loadPdfLib(){if(window.PDFLib)return Promise.resolve(window.PDFLib);if(PDFLIB)return PDFLIB;
+  PDFLIB=new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src='pdf-lib.min.js';sc.onload=()=>ok(window.PDFLib);sc.onerror=()=>{PDFLIB=null;ko(new Error('pdf-lib'))};document.head.appendChild(sc)});return PDFLIB}
+function pdfModal(o){
+  o=o||{};const meses=mesesDisponiveis();const tf=tarefasLista();const C=S.cfg.pdf||{};
+  openM(`<h3>📄 Gerar PDF</h3>
+  <div class="row"><div><label>Período</label><select id="xp"><option value="mes">Um mês</option><option value="int">Intervalo de datas</option></select></div></div>
+  <div class="row" id="xpm"><div><select id="xm">${meses.map(k=>`<option value="${k}"${k===o.mes?' selected':''}>${mLabel(k)}</option>`).join('')}</select></div></div>
+  <div class="row r2" id="xpi" style="display:none"><div><label>De</label><input type="date" id="xd1" value="${(o.mes||iso(new Date()).slice(0,7))+'-01'}"></div><div><label>Até</label><input type="date" id="xd2" value="${today()}"></div></div>
+  ${S.ents.length>1?`<div class="row"><div><label>Entidade</label><select id="xe">${entOpts(o.ent||'',true)}</select></div></div>`:''}
+  <div class="row"><div><label>Organização</label><select id="xg"><option value="dia"${C.grupo!=='tarefa'?' selected':''}>Por dia (lista cronológica)</option><option value="tarefa"${C.grupo==='tarefa'?' selected':''}>Por tarefa (agrupado)</option></select></div></div>
+  <div class="row"><div><label>Tarefa</label><select id="xt"><option value="">Todas as tarefas</option>${tf.map(t=>`<option>${esc(t)}</option>`).join('')}${S.regs.some(r=>!r.tarefa)?'<option value="__sem">(sem tarefa)</option>':''}</select></div></div>
+  <div class="row"><div><label>Nome no relatório (opcional)</label><input id="xn" value="${esc(C.nome||'')}" placeholder="O seu nome"></div></div>
+  <label class="chk"><input type="checkbox" id="xv"${C.valores===false?'':' checked'}> Mostrar valores em € (valor/hora e totais)</label>
+  <label class="chk"><input type="checkbox" id="xa"${C.adics===false?'':' checked'}> Incluir adicionais</label>
+  <label class="chk"><input type="checkbox" id="xo"${C.notas?' checked':''}> Incluir notas</label>
+  <p class="muted" style="margin-top:10px">O PDF não indica se foi pago ou por pagar.</p>
+  <div class="btns" style="margin-top:12px"><button class="btn" id="xok">Gerar PDF</button><button class="btn sec" id="xc">Cancelar</button></div>`);
+  $('#xp').onchange=()=>{const i=$('#xp').value==='int';$('#xpm').style.display=i?'none':'';$('#xpi').style.display=i?'':'none'};
+  $('#xc').onclick=closeM;
+  $('#xok').onclick=async()=>{
+    const f={per:$('#xp').value,mes:$('#xm').value,d1:$('#xd1').value,d2:$('#xd2').value,ent:$('#xe')?$('#xe').value:'',grupo:$('#xg').value,tarefa:$('#xt').value,nome:$('#xn').value.trim(),valores:$('#xv').checked,adics:$('#xa').checked,notas:$('#xo').checked};
+    S.cfg.pdf={grupo:f.grupo,nome:f.nome,valores:f.valores,adics:f.adics,notas:f.notas};
+    let a,b,perTxt;if(f.per==='mes'){a=f.mes+'-01';b=f.mes+'-31';perTxt=mLabel(f.mes)}else{a=f.d1;b=f.d2;if(!a||!b||a>b){toast('Datas inválidas');return}perTxt=fdate(a)+' a '+fdate(b)}
+    const list=S.regs.filter(r=>r.data>=a&&r.data<=b&&(!f.ent||r.ent===f.ent)&&(!f.tarefa||(f.tarefa==='__sem'?!r.tarefa:r.tarefa===f.tarefa))).sort((x,y)=>(x.data+(x.ini||'')).localeCompare(y.data+(y.ini||'')));
+    if(!list.length){toast('Sem registos nesse período');return}
+    $('#xok').disabled=true;$('#xok').textContent='A gerar…';
+    try{const bytes=await buildPDF(list,f,perTxt);persist();
+      const nome='registo-horas-'+(f.per==='mes'?f.mes:a+'_'+b)+(f.tarefa&&f.tarefa!=='__sem'?'-'+f.tarefa.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''):'')+'.pdf';
+      pdfPronto(bytes,nome)}
+    catch(e){console.error(e);toast('Erro ao gerar o PDF');$('#xok').disabled=false;$('#xok').textContent='Gerar PDF'}};
+}
+function pdfPronto(bytes,nome){
+  const file=(()=>{try{return new File([bytes],nome,{type:'application/pdf'})}catch(e){return null}})();
+  const podePart=!!(file&&navigator.canShare&&navigator.canShare({files:[file]}));
+  openM(`<h3>PDF pronto ✓</h3><p class="muted">${esc(nome)}</p><div class="btns" style="flex-direction:column"><button class="btn opt" id="ydl">⬇ Transferir PDF</button>${podePart?'<button class="btn sec opt" id="ysh">📤 Partilhar (WhatsApp, email…)</button>':''}<button class="btn sec opt" id="yc">Fechar</button></div>`);
+  $('#ydl').onclick=()=>download(nome,bytes,'application/pdf');
+  if($('#ysh'))$('#ysh').onclick=async()=>{try{await navigator.share({files:[file],title:nome})}catch(e){}};
+  $('#yc').onclick=closeM;
+}
+async function buildPDF(list,f,perTxt){
+  const {PDFDocument,StandardFonts,rgb}=await loadPdfLib();
+  const doc=await PDFDocument.create();doc.setTitle('Registo de horas de trabalho');doc.setCreator('Registo de Horas');
+  const F=await doc.embedFont(StandardFonts.Helvetica),FB=await doc.embedFont(StandardFonts.HelveticaBold);
+  const ok=new Map();const safe=(t,fn)=>{fn=fn||F;let o='';for(const ch of String(t==null?'':t).replace(/[‘’]/g,"'").replace(/[“”]/g,'"')){const k=ch;if(!ok.has(k)){try{fn.widthOfTextAtSize(k,10);ok.set(k,true)}catch(e){ok.set(k,false)}}o+=ok.get(k)?ch:(ch===' '?' ':'')}return o};
+  const W=595.28,H=841.89,M=40,ACC=rgb(15/255,110/255,110/255),GR=rgb(.42,.45,.5),LN=rgb(.85,.87,.9),BK=rgb(.1,.12,.14),SH=rgb(.93,.96,.96);
+  let pg,y,nPag=0;
+  const novaPag=()=>{pg=doc.addPage([W,H]);nPag++;y=H-M};
+  const fit=(t,fn,sz,w)=>{t=safe(t,fn);if(fn.widthOfTextAtSize(t,sz)<=w)return t;while(t.length&&fn.widthOfTextAtSize(t+'…',sz)>w)t=t.slice(0,-1);return t+'…'};
+  const txt=(t,x,yy,o)=>{o=o||{};const fn=o.b?FB:F,sz=o.sz||9;let s=o.w?fit(t,fn,sz,o.w):safe(t,fn);let xx=x;if(o.al==='r')xx=x-fn.widthOfTextAtSize(s,sz);else if(o.al==='c')xx=x-fn.widthOfTextAtSize(s,sz)/2;pg.drawText(s,{x:xx,y:yy,size:sz,font:fn,color:o.c||BK})};
+  const linha=(yy,c)=>pg.drawLine({start:{x:M,y:yy},end:{x:W-M,y:yy},thickness:.6,color:c||LN});
+  const eurP=n=>eur(n).replace(/ /g,' ');
+  const V=f.valores,multiEnt=S.ents.length>1&&!f.ent;
+  // Cabeçalho
+  novaPag();
+  pg.drawRectangle({x:0,y:H-78,width:W,height:78,color:ACC});
+  txt('Registo de horas de trabalho',M,H-38,{b:1,sz:17,c:rgb(1,1,1)});
+  txt(perTxt.charAt(0).toUpperCase()+perTxt.slice(1),M,H-58,{sz:11,c:rgb(.9,.97,.97)});
+  txt('Emitido em '+fdate(today()),W-M,H-38,{sz:9,al:'r',c:rgb(.9,.97,.97)});
+  y=H-100;
+  const info=[];if(f.nome)info.push(['Nome',f.nome]);
+  info.push(['Entidade',f.ent?ent(f.ent).nome:[...new Set(list.map(r=>ent(r.ent).nome))].join(', ')]);
+  if(f.tarefa)info.push(['Tarefa',f.tarefa==='__sem'?'(sem tarefa)':f.tarefa]);
+  info.forEach(([k,v])=>{txt(k+':',M,y,{b:1,sz:10});txt(v,M+60,y,{sz:10,w:W-2*M-60});y-=15});
+  y-=6;
+  // Totais
+  const tH=list.reduce((a,r)=>a+regHoras(r),0),tB=list.reduce((a,r)=>a+regBase(r),0),tA=f.adics?list.reduce((a,r)=>a+adicTot(r),0):0,nD=new Set(list.map(r=>r.data)).size;
+  const boxes=[['Dias trabalhados',String(nD)],['Horas',hh(tH)]].concat(V?[['Valor das horas',eurP(tB)]].concat(f.adics&&tA?[['Adicionais',eurP(tA)]]:[]).concat([['Total',eurP(tB+tA)]]):[]);
+  const bw=(W-2*M-(boxes.length-1)*8)/boxes.length;
+  boxes.forEach((b,i)=>{const x=M+i*(bw+8);pg.drawRectangle({x,y:y-40,width:bw,height:44,color:SH});txt(b[0],x+8,y-12,{sz:8,c:GR,w:bw-16});txt(b[1],x+8,y-30,{b:1,sz:12,w:bw-16,c:i===boxes.length-1&&V?ACC:BK})});
+  y-=62;
+  // Colunas (por dia)
+  const cols=[{h:'Data',w:62},{h:'Dia',w:28},{h:'Horário',w:70},{h:'Pausa',w:36,al:'r'},{h:'Horas',w:40,al:'r'},{h:'Tarefa',w:0}].concat(V?[{h:'€/h',w:42,al:'r'},{h:'Valor',w:58,al:'r'}]:[]);
+  const fixo=cols.reduce((a,c)=>a+c.w,0);cols.find(c=>c.h==='Tarefa').w=W-2*M-fixo;
+  let cx=M;cols.forEach(c=>{c.x=cx;cx+=c.w});
+  const cab=(cs)=>{pg.drawRectangle({x:M,y:y-5,width:W-2*M,height:17,color:ACC});cs.forEach(c=>txt(c.h,c.al==='r'?c.x+c.w-4:c.x+4,y,{b:1,sz:8.5,c:rgb(1,1,1),al:c.al}));y-=18};
+  const precisa=(h,cs)=>{if(y-h<M+20){novaPag();if(cs)cab(cs)}};
+  const linhaReg=(r,cs,semTarefa)=>{
+    const vals={Data:fdate(r.data),Dia:dow(r.data),'Horário':r.modo==='horas'?'—':r.ini+' - '+r.fim,Pausa:r.modo==='horas'||!+r.pausa?'':r.pausa+' min',Horas:hh(regHoras(r)),Tarefa:semTarefa?'':(r.tarefa||'')+(multiEnt?(r.tarefa?' · ':'')+ent(r.ent).nome:''),'€/h':eurP(r.valor).replace(' €',''),Valor:eurP(regBase(r))};
+    precisa(14,cs);cs.forEach(c=>txt(vals[c.h]||'',c.al==='r'?c.x+c.w-4:c.x+4,y,{sz:8.5,al:c.al,w:c.w-8}));y-=4;
+    if(f.notas&&r.nota){y-=9;precisa(10,cs);txt('Nota: '+r.nota,cols[2].x+4,y,{sz:7.5,c:GR,w:W-M-cols[2].x-8});y-=4}
+    if(f.adics)adicsOf(r).forEach(a=>{y-=10;precisa(10,cs);txt('+ '+(a.desc||'Adicional'),cols[2].x+4,y,{sz:8,c:GR,w:(V?cs[cs.length-1].x:W-M)-cols[2].x-12});if(V)txt(eurP(+a.valor||0),W-M-4,y,{sz:8,c:GR,al:'r'})});
+    y-=6;linha(y+2);y-=9};
+  const subtotal=(rot,hs,val,cs)=>{precisa(16);pg.drawRectangle({x:M,y:y-5,width:W-2*M,height:16,color:SH});txt(rot,M+4,y,{b:1,sz:8.5});const hc=(cs||cols).find(c=>c.h==='Horas');txt(hh(hs),hc.x+hc.w-4,y,{b:1,sz:8.5,al:'r'});if(V)txt(eurP(val),W-M-4,y,{b:1,sz:8.5,al:'r'});y-=22};
+  if(f.grupo==='dia'){
+    y-=4;txt('Registos por dia',M,y,{b:1,sz:11,c:ACC});y-=18;cab(cols);
+    list.forEach(r=>linhaReg(r,cols));
+    subtotal('Total',tH,tB+tA);
+  }else{
+    const grupos={};list.forEach(r=>{const k=r.tarefa||'(sem tarefa)';(grupos[k]=grupos[k]||[]).push(r)});
+    const keys=Object.keys(grupos).sort((a,b)=>a==='(sem tarefa)'?1:b==='(sem tarefa)'?-1:a.localeCompare(b,'pt'));
+    // Resumo por tarefa
+    y-=4;txt('Resumo por tarefa',M,y,{b:1,sz:11,c:ACC});y-=18;
+    const rc=[{h:'Tarefa',w:0},{h:'Dias',w:50,al:'r'},{h:'Horas',w:60,al:'r'}].concat(V?[{h:'Valor',w:80,al:'r'}]:[]);
+    rc[0].w=W-2*M-rc.slice(1).reduce((a,c)=>a+c.w,0);let rx=M;rc.forEach(c=>{c.x=rx;rx+=c.w});
+    cab(rc);
+    keys.forEach(k=>{const g=grupos[k];const v={Tarefa:k,Dias:String(new Set(g.map(r=>r.data)).size),Horas:hh(g.reduce((a,r)=>a+regHoras(r),0)),Valor:eurP(g.reduce((a,r)=>a+regBase(r)+(f.adics?adicTot(r):0),0))};
+      precisa(14,rc);rc.forEach(c=>txt(v[c.h],c.al==='r'?c.x+c.w-4:c.x+4,y,{sz:9,al:c.al,w:c.w-8}));y-=6;linha(y+2);y-=9});
+    subtotal('Total',tH,tB+tA,rc);
+    // Detalhe por tarefa
+    const cs2=cols.filter(c=>c.h!=='Tarefa');const extra=cols.find(c=>c.h==='Tarefa').w;
+    let x2=M;cs2.forEach(c=>{if(c.h==='Horário')c.w+=extra;c.x=x2;x2+=c.w});
+    keys.forEach(k=>{const g=grupos[k];precisa(60);y-=6;txt(k,M,y,{b:1,sz:11,c:ACC,w:W-2*M});y-=18;cab(cs2);
+      g.forEach(r=>linhaReg(r,cs2,true));
+      subtotal('Subtotal — '+k,g.reduce((a,r)=>a+regHoras(r),0),g.reduce((a,r)=>a+regBase(r)+(f.adics?adicTot(r):0),0))});
+    cs2.forEach(c=>{if(c.h==='Horário')c.w-=extra});
+  }
+  // Rodapé
+  doc.getPages().forEach((p,i)=>{p.drawText(safe('Página '+(i+1)+' de '+nPag),{x:W-M-F.widthOfTextAtSize('Página '+(i+1)+' de '+nPag,7.5),y:22,size:7.5,font:F,color:GR});if(f.nome)p.drawText(safe(f.nome+' · '+perTxt),{x:M,y:22,size:7.5,font:F,color:GR})});
+  return await doc.save();
 }
 
 // Cópias de segurança
