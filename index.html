@@ -546,7 +546,7 @@ async function buildPDF(list,f,perTxt){
   y-=6;
   // Totais
   const tH=list.reduce((a,r)=>a+regHoras(r),0),tB=list.reduce((a,r)=>a+regBase(r),0),tA=f.adics?list.reduce((a,r)=>a+adicTot(r),0):0,nD=new Set(list.map(r=>r.data)).size;
-  const boxes=[['Dias trabalhados',String(nD)],['Horas',hh(tH)]].concat(V?[['Valor das horas',eurP(tB)]].concat(f.adics&&tA?[['Adicionais',eurP(tA)]]:[]).concat([['Total',eurP(tB+tA)]]):[]);
+  const boxes=[['Horas trabalhadas',hh(tH)]].concat(V?[['Valor das horas',eurP(tB)]].concat(f.adics&&tA?[['Adicionais',eurP(tA)]]:[]).concat([['Total',eurP(tB+tA)]]):[]);
   const bw=(W-2*M-(boxes.length-1)*8)/boxes.length;
   boxes.forEach((b,i)=>{const x=M+i*(bw+8);pg.drawRectangle({x,y:y-40,width:bw,height:44,color:SH});txt(b[0],x+8,y-12,{sz:8,c:GR,w:bw-16});txt(b[1],x+8,y-30,{b:1,sz:12,w:bw-16,c:i===boxes.length-1&&V?ACC:BK})});
   y-=62;
@@ -572,10 +572,10 @@ async function buildPDF(list,f,perTxt){
     const keys=Object.keys(grupos).sort((a,b)=>a==='(sem tarefa)'?1:b==='(sem tarefa)'?-1:a.localeCompare(b,'pt'));
     // Resumo por tarefa
     y-=4;txt('Resumo por tarefa',M,y,{b:1,sz:11,c:ACC});y-=18;
-    const rc=[{h:'Tarefa',w:0},{h:'Dias',w:50,al:'r'},{h:'Horas',w:60,al:'r'}].concat(V?[{h:'Valor',w:80,al:'r'}]:[]);
+    const rc=[{h:'Tarefa',w:0},{h:'Horas',w:70,al:'r'}].concat(V?[{h:'Valor',w:80,al:'r'}]:[]);
     rc[0].w=W-2*M-rc.slice(1).reduce((a,c)=>a+c.w,0);let rx=M;rc.forEach(c=>{c.x=rx;rx+=c.w});
     cab(rc);
-    keys.forEach(k=>{const g=grupos[k];const v={Tarefa:k,Dias:String(new Set(g.map(r=>r.data)).size),Horas:hh(g.reduce((a,r)=>a+regHoras(r),0)),Valor:eurP(g.reduce((a,r)=>a+regBase(r)+(f.adics?adicTot(r):0),0))};
+    keys.forEach(k=>{const g=grupos[k];const v={Tarefa:k,Horas:hh(g.reduce((a,r)=>a+regHoras(r),0)),Valor:eurP(g.reduce((a,r)=>a+regBase(r)+(f.adics?adicTot(r):0),0))};
       precisa(14,rc);rc.forEach(c=>txt(v[c.h],c.al==='r'?c.x+c.w-4:c.x+4,y,{sz:9,al:c.al,w:c.w-8}));y-=6;linha(y+2);y-=9});
     subtotal('Total',tH,tB+tA,rc);
     // Detalhe por tarefa
